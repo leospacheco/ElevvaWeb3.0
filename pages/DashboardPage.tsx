@@ -45,19 +45,19 @@ type DashboardView = 'summary' | 'tickets' | 'ticket-detail' | 'quotes' | 'quote
 const DashboardPage: React.FC = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
-    
+
     const [view, setView] = useState<DashboardView>('summary');
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [quotes, setQuotes] = useState<Quote[]>([]);
     const [services, setServices] = useState<Service[]>([]);
     const [clients, setClients] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    
+
     const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
     const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
     const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
     const [isSidebarOpen, setSidebarOpen] = useState(false);
-    
+
     const [isNewTicketModalOpen, setNewTicketModalOpen] = useState(false);
     const [isNewQuoteModalOpen, setNewQuoteModalOpen] = useState(false);
     const [isNewServiceModalOpen, setNewServiceModalOpen] = useState(false);
@@ -82,7 +82,9 @@ const DashboardPage: React.FC = () => {
                 quotesQuery.order('created_at', { ascending: false }),
                 servicesQuery.order('start_date', { ascending: false }),
                 // FIX: Used clientsQuery variable instead of clientRes which was not yet declared.
-                user.role === UserRole.ADMIN ? clientsQuery : Promise.resolve({ data: [] }),
+                user.role === UserRole.ADMIN
+                    ? clientsQuery
+                    : Promise.resolve({ data: [], error: null }),
             ]);
 
             if (ticketRes.error) throw ticketRes.error;
@@ -115,8 +117,8 @@ const DashboardPage: React.FC = () => {
         { id: 'services', label: 'Meus Serviços', icon: ServiceIcon },
     ];
 
-    const adminNavItems = [ ...customerNavItems, { id: 'clients', label: 'Clientes', icon: ClientsIcon, notification: false }, { id: 'employees', label: 'Funcionários', icon: EmployeesIcon, notification: false }, ];
-    
+    const adminNavItems = [...customerNavItems, { id: 'clients', label: 'Clientes', icon: ClientsIcon, notification: false }, { id: 'employees', label: 'Funcionários', icon: EmployeesIcon, notification: false },];
+
     const navItems = user?.role === UserRole.ADMIN ? adminNavItems : customerNavItems;
 
     const handleLogout = async () => {
@@ -136,7 +138,7 @@ const DashboardPage: React.FC = () => {
             case 'ticket-detail': return selectedTicketId && <TicketDetailView ticketId={selectedTicketId} onBack={() => setView('tickets')} onSuccess={fetchData} />;
             case 'quotes': return <QuotesView quotes={quotes} onQuoteSelect={navigateToQuoteDetail} onNewQuote={() => setNewQuoteModalOpen(true)} />;
             case 'quote-detail': return selectedQuoteId && <QuoteDetailView quoteId={selectedQuoteId} onBack={() => setView('quotes')} onSuccess={fetchData} />;
-            case 'services': return <ServicesView services={services} onServiceSelect={navigateToServiceDetail} onNewService={() => setNewServiceModalOpen(true)}/>;
+            case 'services': return <ServicesView services={services} onServiceSelect={navigateToServiceDetail} onNewService={() => setNewServiceModalOpen(true)} />;
             case 'service-detail': return selectedServiceId && <ServiceDetailView serviceId={selectedServiceId} onBack={() => setView('services')} onSuccess={fetchData} />;
             case 'clients': return user?.role === UserRole.ADMIN && <ClientsView clients={clients} />;
             case 'employees': return user?.role === UserRole.ADMIN && <EmployeesView />;
@@ -150,7 +152,7 @@ const DashboardPage: React.FC = () => {
                 <div className="px-4"><Logo className="h-10 text-white" /></div>
                 <nav>
                     {navItems.map(item => (
-                        <a key={item.id} href="#" onClick={(e) => { e.preventDefault(); setView(item.id as DashboardView); setSidebarOpen(false);}}
+                        <a key={item.id} href="#" onClick={(e) => { e.preventDefault(); setView(item.id as DashboardView); setSidebarOpen(false); }}
                             className={`flex items-center justify-between px-4 py-2 my-1 rounded-md transition-colors ${view === item.id ? 'bg-elevva-blue' : 'hover:bg-gray-700'}`}
                         >
                             <div className="flex items-center space-x-3">
@@ -170,7 +172,7 @@ const DashboardPage: React.FC = () => {
             </aside>
             <div className="flex-1 flex flex-col overflow-hidden">
                 <header className="flex justify-between md:justify-end items-center p-4 bg-white border-b">
-                     <button className="md:hidden text-gray-600" onClick={() => setSidebarOpen(true)}>
+                    <button className="md:hidden text-gray-600" onClick={() => setSidebarOpen(true)}>
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
                     </button>
                     <div className="text-right">
@@ -189,7 +191,7 @@ const DashboardPage: React.FC = () => {
     );
 };
 
-const StatCard: React.FC<{ title: string; value: number | string; icon: React.ReactNode }> = ({ title, value, icon }) => ( <Card className="flex items-center p-5"> <div className="p-3 rounded-full bg-elevva-blue/20 text-elevva-blue mr-4">{icon}</div> <div> <p className="text-sm font-medium text-gray-500">{title}</p> <p className="text-2xl font-bold text-gray-800">{value}</p> </div> </Card> );
+const StatCard: React.FC<{ title: string; value: number | string; icon: React.ReactNode }> = ({ title, value, icon }) => (<Card className="flex items-center p-5"> <div className="p-3 rounded-full bg-elevva-blue/20 text-elevva-blue mr-4">{icon}</div> <div> <p className="text-sm font-medium text-gray-500">{title}</p> <p className="text-2xl font-bold text-gray-800">{value}</p> </div> </Card>);
 
 const SummaryView: React.FC<{ stats: { tickets: Ticket[]; quotes: Quote[]; services: Service[]; clients: User[] } }> = ({ stats }) => {
     const { user } = useAuth();
@@ -209,7 +211,7 @@ const SummaryView: React.FC<{ stats: { tickets: Ticket[]; quotes: Quote[]; servi
         };
     }, [stats, user]);
 
-    return ( <div> <h1 className="text-3xl font-bold text-gray-800 mb-6">Bem-vindo(a), {user?.name}!</h1> <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"> {summary.stat1 && <StatCard {...summary.stat1} />} {summary.stat2 && <StatCard {...summary.stat2} />} {summary.stat3 && <StatCard {...summary.stat3} />} {summary.stat4 && <StatCard {...summary.stat4} />} </div> </div> );
+    return (<div> <h1 className="text-3xl font-bold text-gray-800 mb-6">Bem-vindo(a), {user?.name}!</h1> <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"> {summary.stat1 && <StatCard {...summary.stat1} />} {summary.stat2 && <StatCard {...summary.stat2} />} {summary.stat3 && <StatCard {...summary.stat3} />} {summary.stat4 && <StatCard {...summary.stat4} />} </div> </div>);
 };
 
 const TicketsView: React.FC<{ tickets: Ticket[]; onTicketSelect: (id: string) => void; onNewTicket: () => void; }> = ({ tickets, onTicketSelect, onNewTicket }) => {
@@ -278,7 +280,7 @@ const TicketDetailView: React.FC<{ ticketId: string; onBack: () => void; onSucce
     };
 
     const handleStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-        if(!ticket) return;
+        if (!ticket) return;
         const newStatus = e.target.value as TicketStatus;
         await supabase.from('tickets').update({ status: newStatus }).eq('id', ticket.id);
         await fetchTicketDetails();
@@ -298,8 +300,8 @@ const TicketDetailView: React.FC<{ ticketId: string; onBack: () => void; onSucce
                     </div>
                     <div>
                         {user?.role === UserRole.ADMIN ? (
-                             <Select value={ticket.status} onChange={handleStatusChange}> {Object.values(TicketStatus).map(s => <option key={s} value={s}>{s}</option>)} </Select>
-                        ) : ( <StatusBadge status={ticket.status} colors={ticketStatusColors} /> )}
+                            <Select value={ticket.status} onChange={handleStatusChange}> {Object.values(TicketStatus).map(s => <option key={s} value={s}>{s}</option>)} </Select>
+                        ) : (<StatusBadge status={ticket.status} colors={ticketStatusColors} />)}
                     </div>
                 </div>
                 <div className="mt-6 border-t pt-6 h-96 overflow-y-auto bg-gray-50 p-4 rounded-md flex flex-col space-y-4">
@@ -314,7 +316,7 @@ const TicketDetailView: React.FC<{ ticketId: string; onBack: () => void; onSucce
                     ))}
                 </div>
                 <div className="mt-4 border-t pt-4">
-                    <Textarea rows={3} value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder="Digite sua mensagem..." disabled={ticket.status === TicketStatus.CLOSED && user?.role === UserRole.CUSTOMER}/>
+                    <Textarea rows={3} value={newMessage} onChange={e => setNewMessage(e.target.value)} placeholder="Digite sua mensagem..." disabled={ticket.status === TicketStatus.CLOSED && user?.role === UserRole.CUSTOMER} />
                     <div className="text-right mt-2"> <Button onClick={handleSendMessage} disabled={ticket.status === TicketStatus.CLOSED && user?.role === UserRole.CUSTOMER}>Enviar Mensagem</Button> </div>
                 </div>
             </Card>
@@ -368,7 +370,7 @@ const QuoteDetailView: React.FC<{ quoteId: string; onBack: () => void; onSuccess
     }, [quoteId]);
 
     useEffect(() => { fetchQuote(); }, [fetchQuote]);
-    
+
     const handleStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
         if (!quote) return;
         const newStatus = e.target.value as QuoteStatus;
@@ -392,16 +394,16 @@ const QuoteDetailView: React.FC<{ quoteId: string; onBack: () => void; onSuccess
                         <p className="text-2xl font-bold text-elevva-blue mt-2">{`R$ ${quote.value.toFixed(2)}`}</p>
                     </div>
                     <div className="text-right">
-                         {user?.role === UserRole.ADMIN ? (
-                             <Select value={quote.status} onChange={handleStatusChange}> {Object.values(QuoteStatus).map(s => <option key={s} value={s}>{s}</option>)} </Select>
-                        ) : ( <StatusBadge status={quote.status} colors={quoteStatusColors} /> )}
+                        {user?.role === UserRole.ADMIN ? (
+                            <Select value={quote.status} onChange={handleStatusChange}> {Object.values(QuoteStatus).map(s => <option key={s} value={s}>{s}</option>)} </Select>
+                        ) : (<StatusBadge status={quote.status} colors={quoteStatusColors} />)}
                         <p className="text-xs text-gray-400 mt-1">Criado em: {new Date(quote.created_at).toLocaleDateString()}</p>
                     </div>
                 </div>
-                {user?.role === UserRole.ADMIN && ( <div className="text-right mt-4"> <Button onClick={() => setEditModalOpen(true)}>Editar Orçamento</Button> </div> )}
+                {user?.role === UserRole.ADMIN && (<div className="text-right mt-4"> <Button onClick={() => setEditModalOpen(true)}>Editar Orçamento</Button> </div>)}
                 <div className="mt-6 border-t pt-6 space-y-4">
                     <div> <h3 className="font-semibold text-gray-700">Detalhes do Serviço</h3> <p className="text-gray-600 whitespace-pre-wrap">{quote.details || 'Nenhum detalhe fornecido.'}</p> </div>
-                    {quote.observation && ( <div> <h3 className="font-semibold text-gray-700">Observações</h3> <p className="text-gray-600 bg-gray-50 p-3 rounded-md">{quote.observation}</p> </div> )}
+                    {quote.observation && (<div> <h3 className="font-semibold text-gray-700">Observações</h3> <p className="text-gray-600 bg-gray-50 p-3 rounded-md">{quote.observation}</p> </div>)}
                 </div>
             </Card>
             {user?.role === UserRole.ADMIN && quote && <EditQuoteModal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} quote={quote} onSuccess={handleEditSuccess} />}
@@ -413,7 +415,7 @@ const ServicesView: React.FC<{ services: Service[], onServiceSelect: (id: string
     const { user } = useAuth();
     return (
         <Card className="!p-0">
-             <div className="flex justify-between items-center p-6"> <h1 className="text-2xl font-bold text-gray-800">Serviços Contratados</h1> {user?.role === UserRole.ADMIN && <Button onClick={onNewService}>Criar Serviço</Button>} </div>
+            <div className="flex justify-between items-center p-6"> <h1 className="text-2xl font-bold text-gray-800">Serviços Contratados</h1> {user?.role === UserRole.ADMIN && <Button onClick={onNewService}>Criar Serviço</Button>} </div>
             <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
@@ -422,7 +424,7 @@ const ServicesView: React.FC<{ services: Service[], onServiceSelect: (id: string
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Serviço</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data de Início</th>
-                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ação</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ação</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -453,7 +455,7 @@ const ServiceDetailView: React.FC<{ serviceId: string; onBack: () => void; onSuc
     }, [serviceId]);
 
     useEffect(() => { fetchService(); }, [fetchService]);
-    
+
     const handleStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
         if (!service) return;
         const newStatus = e.target.value as ServiceStatus;
@@ -476,16 +478,16 @@ const ServiceDetailView: React.FC<{ serviceId: string; onBack: () => void; onSuc
                         <p className="text-sm text-gray-500 mt-1">Cliente: {service.profiles.name}</p>
                     </div>
                     <div className="text-right">
-                         {user?.role === UserRole.ADMIN ? (
-                             <Select value={service.status} onChange={handleStatusChange}> {Object.values(ServiceStatus).map(s => <option key={s} value={s}>{s}</option>)} </Select>
-                        ) : ( <StatusBadge status={service.status} colors={serviceStatusColors} /> )}
+                        {user?.role === UserRole.ADMIN ? (
+                            <Select value={service.status} onChange={handleStatusChange}> {Object.values(ServiceStatus).map(s => <option key={s} value={s}>{s}</option>)} </Select>
+                        ) : (<StatusBadge status={service.status} colors={serviceStatusColors} />)}
                         <p className="text-xs text-gray-400 mt-1">Início em: {new Date(service.start_date).toLocaleDateString()}</p>
                     </div>
                 </div>
-                {user?.role === UserRole.ADMIN && ( <div className="text-right mt-4"> <Button onClick={() => setEditModalOpen(true)}>Editar Serviço</Button> </div> )}
+                {user?.role === UserRole.ADMIN && (<div className="text-right mt-4"> <Button onClick={() => setEditModalOpen(true)}>Editar Serviço</Button> </div>)}
                 <div className="mt-6 border-t pt-6 space-y-4">
                     <div> <h3 className="font-semibold text-gray-700">Descrição do Serviço</h3> <p className="text-gray-600 whitespace-pre-wrap">{service.description || 'Nenhuma descrição fornecida.'}</p> </div>
-                    {service.observation && ( <div> <h3 className="font-semibold text-gray-700">Observações</h3> <p className="text-gray-600 bg-gray-50 p-3 rounded-md">{service.observation}</p> </div> )}
+                    {service.observation && (<div> <h3 className="font-semibold text-gray-700">Observações</h3> <p className="text-gray-600 bg-gray-50 p-3 rounded-md">{service.observation}</p> </div>)}
                 </div>
             </Card>
             {user?.role === UserRole.ADMIN && service && <EditServiceModal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} service={service} onSuccess={handleEditSuccess} />}
@@ -495,7 +497,7 @@ const ServiceDetailView: React.FC<{ serviceId: string; onBack: () => void; onSuc
 
 const ClientsView: React.FC<{ clients: User[] }> = ({ clients }) => {
     const [searchTerm, setSearchTerm] = useState('');
-    const filteredClients = useMemo(() => clients.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.email.toLowerCase().includes(searchTerm.toLowerCase()) ), [clients, searchTerm]);
+    const filteredClients = useMemo(() => clients.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.email.toLowerCase().includes(searchTerm.toLowerCase())), [clients, searchTerm]);
     return (
         <Card>
             <h1 className="text-2xl font-bold text-gray-800 mb-4">Gerenciar Clientes</h1>
@@ -503,14 +505,14 @@ const ClientsView: React.FC<{ clients: User[] }> = ({ clients }) => {
             <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50"> <tr> <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th> <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th> </tr> </thead>
-                    <tbody className="bg-white divide-y divide-gray-200"> {filteredClients.map(client => ( <tr key={client.id}><td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{client.name}</td><td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.email}</td></tr> ))} </tbody>
+                    <tbody className="bg-white divide-y divide-gray-200"> {filteredClients.map(client => (<tr key={client.id}><td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{client.name}</td><td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{client.email}</td></tr>))} </tbody>
                 </table>
             </div>
         </Card>
     );
 };
 
-const EmployeesView: React.FC = () => { return (<Card><h1 className="text-2xl font-bold text-gray-800">Gerenciar Funcionários</h1><p className="mt-4">Funcionalidade de convite e gerenciamento de funcionários será implementada aqui, conectando-se a um backend real para enviar emails e gerenciar permissões.</p></Card>);};
+const EmployeesView: React.FC = () => { return (<Card><h1 className="text-2xl font-bold text-gray-800">Gerenciar Funcionários</h1><p className="mt-4">Funcionalidade de convite e gerenciamento de funcionários será implementada aqui, conectando-se a um backend real para enviar emails e gerenciar permissões.</p></Card>); };
 
 interface CreationModalProps { isOpen: boolean; onClose: () => void; clients: User[]; onSuccess: () => void; }
 
@@ -530,7 +532,7 @@ const NewTicketModal: React.FC<CreationModalProps> = ({ isOpen, onClose, clients
 
         const { error: messageError } = await supabase.from('messages').insert({ ticket_id: newTicket.id, sender_id: user.id, content: content });
         if (messageError) { console.error(messageError); return; }
-        
+
         setSubject(''); setContent('');
         onSuccess();
         onClose();
@@ -538,7 +540,7 @@ const NewTicketModal: React.FC<CreationModalProps> = ({ isOpen, onClose, clients
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Abrir Novo Chamado">
             <div className="space-y-4">
-                {user?.role === UserRole.ADMIN && ( <div><label>Cliente</label><Select value={selectedClientId} onChange={e => setSelectedClientId(e.target.value)}>{clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</Select></div> )}
+                {user?.role === UserRole.ADMIN && (<div><label>Cliente</label><Select value={selectedClientId} onChange={e => setSelectedClientId(e.target.value)}>{clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</Select></div>)}
                 <Input placeholder="Assunto do chamado" value={subject} onChange={e => setSubject(e.target.value)} />
                 <Textarea placeholder="Descreva o problema ou dúvida..." rows={6} value={content} onChange={e => setContent(e.target.value)} />
                 <div className="text-right"><Button onClick={handleSubmit}>Enviar Chamado</Button></div>
@@ -576,7 +578,7 @@ const NewQuoteModal: React.FC<CreationModalProps> = ({ isOpen, onClose, clients,
     )
 };
 
-const EditQuoteModal: React.FC<{isOpen: boolean; onClose: () => void; quote: Quote; onSuccess: () => void;}> = ({ isOpen, onClose, quote, onSuccess }) => {
+const EditQuoteModal: React.FC<{ isOpen: boolean; onClose: () => void; quote: Quote; onSuccess: () => void; }> = ({ isOpen, onClose, quote, onSuccess }) => {
     const [formData, setFormData] = useState(quote);
     useEffect(() => { setFormData(quote); }, [quote]);
 
@@ -610,9 +612,9 @@ const NewServiceModal: React.FC<CreationModalProps> = ({ isOpen, onClose, client
     const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
     const [selectedClientId, setSelectedClientId] = useState(clients[0]?.id || '');
     useEffect(() => { if (clients.length > 0 && !selectedClientId) setSelectedClientId(clients[0].id); }, [clients, selectedClientId]);
-    
+
     const handleSubmit = async () => {
-        if(!title.trim() || !selectedClientId) return;
+        if (!title.trim() || !selectedClientId) return;
         await supabase.from('services').insert({ client_id: selectedClientId, title, description, status: ServiceStatus.NOT_STARTED, start_date: startDate });
         setTitle(''); setDescription('');
         onSuccess();
@@ -621,7 +623,7 @@ const NewServiceModal: React.FC<CreationModalProps> = ({ isOpen, onClose, client
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Criar Novo Serviço">
-             <div className="space-y-4">
+            <div className="space-y-4">
                 <div><label>Cliente</label><Select value={selectedClientId} onChange={e => setSelectedClientId(e.target.value)}>{clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</Select></div>
                 <Input placeholder="Título do Serviço" value={title} onChange={e => setTitle(e.target.value)} />
                 <Textarea placeholder="Descrição do serviço" value={description} onChange={e => setDescription(e.target.value)} rows={4} />
@@ -632,7 +634,7 @@ const NewServiceModal: React.FC<CreationModalProps> = ({ isOpen, onClose, client
     );
 };
 
-const EditServiceModal: React.FC<{isOpen: boolean; onClose: () => void; service: Service; onSuccess: () => void;}> = ({ isOpen, onClose, service, onSuccess }) => {
+const EditServiceModal: React.FC<{ isOpen: boolean; onClose: () => void; service: Service; onSuccess: () => void; }> = ({ isOpen, onClose, service, onSuccess }) => {
     const [formData, setFormData] = useState(service);
     useEffect(() => { setFormData(service); }, [service]);
 
