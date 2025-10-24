@@ -26,7 +26,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     getInitialSession();
-    
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
 
     return () => {
@@ -36,13 +36,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const handleAuthChange = async (event: AuthChangeEvent, session: Session | null) => {
     if (session?.user) {
-      const { data: profile } = await supabase
+      // CORREÇÃO: Captura explícita de 'error' para evitar travamento em falhas de RLS (406)
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .single();
-      
-      if (profile) {
+
+      if (profileError) {
+        // Se o perfil falhar (quase sempre RLS), loga o erro e NÃO define o usuário.
+        console.error("Falha ao buscar perfil do usuário (RLS Issue):", profileError);
+        // Deixa o 'setUser' para o estado 'null' (else) ou não faz nada, 
+        // mantendo o usuário deslogado até que o RLS seja corrigido.
+        setUser(null);
+      }
+      else if (profile) {
         setUser({
           id: session.user.id,
           email: session.user.email!,
@@ -91,7 +99,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return { error: profileError };
       }
     }
-    
+
     return { error: null };
   };
 
