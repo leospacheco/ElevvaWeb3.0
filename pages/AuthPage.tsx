@@ -20,6 +20,8 @@ const AuthPage: React.FC = () => {
     setIsLogin(location.pathname === '/login');
   }, [location.pathname]);
 
+  // leospacheco/elevvaweb3.0/ElevvaWeb3.0-71c8c7c88d49f2fb927a079df654fa2ccb0fda15/pages/AuthPage.tsx
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
@@ -29,32 +31,34 @@ const AuthPage: React.FC = () => {
       let result: { error: any | null };
 
       if (isLogin) {
-        // A função auth.login retorna { error: ... }
         result = await auth.login(email, password);
 
         if (result.error) {
           setError(result.error.message || 'Credenciais inválidas. Por favor, tente novamente.');
         } else {
-          // Sucesso no Supabase Auth. Navega para o Dashboard.
-          // O PrivateRoute irá esperar o AuthProvider buscar o perfil e atualizar o estado.
+          // CORREÇÃO: Reseta o estado de carregamento do botão imediatamente antes de navegar
+          setLoading(false);
           navigate('/dashboard');
+          return;
         }
 
       } else {
-        // A função auth.register também retorna { error: ... }
         result = await auth.register(name, email, password);
 
         if (result.error) {
           setError(result.error.message || 'Ocorreu um erro no registro.');
         } else {
-          // Sucesso no registro (Auth e Profile). Navega.
+          // CORREÇÃO: Reseta o estado de carregamento do botão imediatamente antes de navegar
+          setLoading(false);
           navigate('/dashboard');
+          return;
         }
       }
     } catch (err) {
       setError('Ocorreu um erro. Por favor, tente novamente mais tarde.');
     } finally {
-      // O setLoading(false) agora só é chamado após a lógica de sucesso/falha do Auth
+      // Mantemos o finally, mas o setLoading é redundante após a correção,
+      // ele serve apenas para erros gerais antes da lógica do Supabase.
       setLoading(false);
     }
   };
