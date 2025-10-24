@@ -1,0 +1,5 @@
+{
+  "name": "Elevva Web",
+  "description": "A comprehensive web application for Elevva Web, a digital solutions agency. It includes a public landing page and a full-featured dashboard for clients and administrators to manage services, quotes, and support tickets.",
+  "requestFramePermissions": []
+}
