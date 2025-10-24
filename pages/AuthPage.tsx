@@ -22,6 +22,8 @@ const AuthPage: React.FC = () => {
 
   // leospacheco/elevvaweb3.0/ElevvaWeb3.0-71c8c7c88d49f2fb927a079df654fa2ccb0fda15/pages/AuthPage.tsx
 
+  // pages/AuthPage.tsx
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
@@ -32,34 +34,28 @@ const AuthPage: React.FC = () => {
 
       if (isLogin) {
         result = await auth.login(email, password);
-
-        if (result.error) {
-          setError(result.error.message || 'Credenciais inválidas. Por favor, tente novamente.');
-        } else {
-          // CORREÇÃO: Reseta o estado de carregamento do botão imediatamente antes de navegar
-          setLoading(false);
-          navigate('/dashboard');
-          return;
-        }
-
       } else {
         result = await auth.register(name, email, password);
+      }
 
-        if (result.error) {
-          setError(result.error.message || 'Ocorreu um erro no registro.');
-        } else {
-          // CORREÇÃO: Reseta o estado de carregamento do botão imediatamente antes de navegar
-          setLoading(false);
-          navigate('/dashboard');
-          return;
-        }
+      if (result.error) {
+        // CORREÇÃO DE ROBUSTEZ: Trata o objeto de erro de forma segura
+        const errorMessage = typeof result.error === 'object' && result.error.message
+          ? result.error.message
+          : 'Erro de permissão ou conexão. Verifique as políticas RLS.';
+        setError(errorMessage);
+        setLoading(false); // Garante que o botão seja liberado em caso de erro.
+
+      } else {
+        // Sucesso no Auth. Navega para o Dashboard.
+        setLoading(false);
+        navigate('/dashboard');
+        // Não é necessário 'return' aqui, pois a navegação desmontará o componente.
       }
     } catch (err) {
-      setError('Ocorreu um erro. Por favor, tente novamente mais tarde.');
+      setError('Ocorreu um erro geral. Por favor, tente novamente mais tarde.');
     } finally {
-      // Mantemos o finally, mas o setLoading é redundante após a correção,
-      // ele serve apenas para erros gerais antes da lógica do Supabase.
-      setLoading(false);
+      setLoading(false); // Linha redundante, mas serve como fallback de segurança.
     }
   };
 

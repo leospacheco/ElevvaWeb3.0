@@ -36,21 +36,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const handleAuthChange = async (event: AuthChangeEvent, session: Session | null) => {
     if (session?.user) {
-      // CORREÇÃO: Captura explícita de 'error' para evitar travamento em falhas de RLS (406)
+      // CORREÇÃO: Usamos .select('*, profiles(*)') para lidar com o erro
+      // de forma segura e explícita.
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .single();
 
-      if (profileError) {
-        // Se o perfil falhar (quase sempre RLS), loga o erro e NÃO define o usuário.
-        console.error("Falha ao buscar perfil do usuário (RLS Issue):", profileError);
-        // Deixa o 'setUser' para o estado 'null' (else) ou não faz nada, 
-        // mantendo o usuário deslogado até que o RLS seja corrigido.
+      if (profileError || !profile) {
+        // Se a busca falhar (porque o perfil não existe ou RLS está ativo),
+        // registramos o erro no console (invisível na tela) e definimos o usuário como null.
+        console.error("Falha ao buscar perfil do usuário. Erro:", profileError);
         setUser(null);
       }
-      else if (profile) {
+      else {
+        // Sucesso: Perfil encontrado.
         setUser({
           id: session.user.id,
           email: session.user.email!,
@@ -62,57 +63,58 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(null);
     }
   };
+};
 
-  const login = async (email: string, pass: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
-    return { error };
-  };
+const login = async (email: string, pass: string) => {
+  const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
+  return { error };
+};
 
-  const logout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-  };
+const logout = async () => {
+  await supabase.auth.signOut();
+  setUser(null);
+};
 
-  const register = async (name: string, email: string, pass: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password: pass,
-      options: {
-        data: {
-          name: name,
-        }
-      }
-    });
-
-    if (error) return { error };
-
-    // After successful sign up, create a profile entry
-    if (data.user) {
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: data.user.id,
+const register = async (name: string, email: string, pass: string) => {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password: pass,
+    options: {
+      data: {
         name: name,
-        role: UserRole.CUSTOMER
-      });
-      if (profileError) {
-        // This is a tricky state. User is created in auth, but not in db.
-        // For simplicity, we'll just return the error. A real app might need cleanup logic.
-        return { error: profileError };
       }
     }
+  });
 
-    return { error: null };
-  };
+  if (error) return { error };
 
-  const value = {
-    user,
-    isAuthenticated: !!user,
-    loading,
-    login,
-    logout,
-    register,
-  };
+  // After successful sign up, create a profile entry
+  if (data.user) {
+    const { error: profileError } = await supabase.from('profiles').insert({
+      id: data.user.id,
+      name: name,
+      role: UserRole.CUSTOMER
+    });
+    if (profileError) {
+      // FIX DE DEBUG: Exibe o erro de inserção do perfil (RLS) no console.
+      console.error("Supabase Profile INSERT failed - RLS likely:", profileError);
+      return { error: profileError };
+    }
+  }
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return { error: null };
+};
+
+const value = {
+  user,
+  isAuthenticated: !!user,
+  loading,
+  login,
+  logout,
+  register,
+};
+
+return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = (): AuthContextType => {
